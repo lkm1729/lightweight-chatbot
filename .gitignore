@@ -1,0 +1,27 @@
+# 运行时数据：内含 API Key 明文与对话历史，绝不入库
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# PyInstaller 中间产物
+build/
+dist/
+packaging/build_tmp/
+*.spec
+# 打包配置是源文件，得入库（上一行的 *.spec 会连它一起排除）
+!packaging/Easy-Chatbox.spec
+
+# 打包出来的发布目录，体积大且可随时重建
+/Easy-Chatbox-聊天助手/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

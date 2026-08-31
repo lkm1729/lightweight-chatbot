@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Easy Chatbox</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- 侧边栏：会话列表 -->
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <span class="logo">Easy Chatbox</span>
+        <button id="btn-new" class="icon-btn" title="新建对话">＋</button>
+      </div>
+      <ul id="conv-list" class="conv-list"></ul>
+      <p id="conv-empty" class="conv-empty hidden">还没有对话，点右上角 ＋ 新建。</p>
+      <button id="btn-settings" class="settings-btn">⚙ 设置</button>
+    </aside>
+
+    <!-- 主区：对话 -->
+    <main class="main">
+      <header class="topbar">
+        <h1 id="conv-title" class="conv-title">对话</h1>
+        <span id="status" class="status"></span>
+      </header>
+
+      <div id="messages" class="messages">
+        <div class="empty-hint">
+          <h2>开始一段对话</h2>
+          <p>先在「设置」里添加供应商与模型，再从输入框右侧选择模型。</p>
+        </div>
+      </div>
+
+      <footer class="composer">
+        <!-- 已选附件：为空时整条收起 -->
+        <div id="attach-tray" class="attach-tray hidden"></div>
+
+        <div class="composer-row">
+          <textarea id="inp-text" class="inp-text" rows="1"
+                    placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+
+          <!-- 输入框右侧：附件 ＋ 联网搜索开关 + 模型抽屉 + 推理强度抽屉 + 发送。
+               两枚胶囊拼成一枚分段药丸，读起来就是「Gemini 3.1 Pro │ 极高↑」。 -->
+          <div class="composer-controls">
+            <div class="picker" id="pick-attach">
+              <button id="btn-attach" class="attach-btn" aria-haspopup="menu"
+                      aria-expanded="false" title="添加图片或文件">＋</button>
+              <div id="attach-drawer" class="drawer drawer-left hidden" role="menu">
+                <button type="button" id="opt-image" class="drawer-item" role="menuitem">
+                  <span class="di-icon">🖼</span><span>添加图片</span>
+                </button>
+                <button type="button" id="opt-file" class="drawer-item" role="menuitem">
+                  <span class="di-icon">📄</span><span>添加文件</span>
+                </button>
+              </div>
+            </div>
+
+            <button id="btn-search" class="icon-btn" title="联网搜索（关闭）">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <ellipse cx="12" cy="12" rx="5" ry="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M2 12h20" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 2c-1.5 3-1.5 7 0 10m0-10c1.5 3 1.5 7 0 10" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+
+            <div class="chip-group">
+              <div class="picker" id="pick-model">
+                <button id="btn-model" class="chip chip-left" aria-haspopup="listbox"
+                        aria-expanded="false" title="选择模型">
+                  <span id="model-name" class="chip-text">未配置模型</span>
+                  <span class="chip-caret">▾</span>
+                </button>
+                <div id="model-drawer" class="drawer hidden" role="listbox"></div>
+              </div>
+
+              <div class="picker" id="pick-effort">
+                <button id="btn-effort" class="chip chip-right" aria-haspopup="listbox"
+                        aria-expanded="false" title="选择推理强度">
+                  <span id="effort-name" class="chip-text">中</span>
+                  <span class="chip-caret">▾</span>
+                </button>
+                <div id="effort-drawer" class="drawer drawer-wide hidden" role="listbox"></div>
+              </div>
+            </div>
+
+            <button id="btn-send" class="send-btn">发送</button>
+            <button id="btn-stop" class="stop-btn hidden">停止</button>
+          </div>
+        </div>
+
+        <!-- 两个隐藏的文件选择器，由上面的抽屉触发 -->
+        <input id="inp-image" class="hidden" type="file" accept="image/*" multiple>
+        <input id="inp-file" class="hidden" type="file" multiple>
+      </footer>
+    </main>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>供应商与模型设置</h3>
+        <button id="btn-close" class="icon-btn">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="hint">
+          四个协议下各可挂多个供应商（官方站或中转站）。Base URL 只需填基础地址
+          （<code>https://api.example.com</code> 或 <code>https://api.example.com/v1</code>），
+          版本段与协议路径会自动补全；若中转站路径特殊，可在结尾加 <code>#</code> 锁定完整端点。
+          模型的<strong>底层 ID</strong> 是发给上游的名字，<strong>显示名</strong>只用于界面。
+        </p>
+        <div id="provider-forms" class="provider-forms"></div>
+
+        <hr class="section-divider">
+
+        <h4 class="section-title">联网搜索配置</h4>
+        <p class="hint">
+          开启联网搜索按钮后，会先调用搜索 API 获取资料，再将结果作为上下文发给模型。
+          支持 Tavily、Brave、Serper、SearXNG、Exa 五种协议。
+        </p>
+        <div class="search-config">
+          <div class="form-row">
+            <label>搜索协议</label>
+            <select id="search-type" class="form-input">
+              <option value="">未配置</option>
+              <option value="tavily">Tavily</option>
+              <option value="brave">Brave Search</option>
+              <option value="serper">Serper</option>
+              <option value="searxng">SearXNG（自建）</option>
+              <option value="exa">Exa</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>服务名称（可选）</label>
+            <input type="text" id="search-name" class="form-input" placeholder="例：Tavily 官方">
+          </div>
+          <div class="form-row">
+            <label>Base URL</label>
+            <input type="text" id="search-base-url" class="form-input"
+                   placeholder="https://api.tavily.com">
+          </div>
+          <div class="form-row">
+            <label>API Key</label>
+            <div class="input-with-btn">
+              <div class="input-with-toggle" style="flex: 1;">
+                <input type="password" id="search-api-key" class="form-input"
+                       placeholder="留空表示不使用搜索功能">
+                <button type="button" class="toggle-visibility" title="显示密钥">
+                  <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.5 12S5.2 5.5 12 5.5 22.5 12 22.5 12 18.8 18.5 12 18.5 1.5 12 1.5 12z"
+                          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/>
+                  </svg>
+                </button>
+              </div>
+              <button type="button" id="btn-search-probe" class="secondary-btn">测试</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>最大结果数</label>
+            <input type="number" id="search-max-results" class="form-input"
+                   value="5" min="1" max="10">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <span id="save-msg" class="save-msg"></span>
+        <button id="btn-save" class="primary-btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 确认框。刻意不用 window.confirm：浏览器的「阻止此页面创建其他对话框」
+       一旦勾上就会让它静默返回 false，删除按钮从此毫无反应；pywebview 之类的
+       宿主也可能整体禁用 JS 弹窗。 -->
+  <div id="confirm" class="modal hidden">
+    <div class="modal-card confirm-card">
+      <p id="confirm-text" class="confirm-text"></p>
+      <div class="confirm-actions">
+        <button id="confirm-cancel" class="ghost-btn">取消</button>
+        <button id="confirm-ok" class="danger-btn">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 侧边栏一条会话：标题 + 重命名 + 删除 -->
+  <template id="tpl-conv-item">
+    <li class="conv-item">
+      <span class="ci-title"></span>
+      <input class="ci-input hidden" type="text" maxlength="60">
+      <span class="ci-actions">
+        <button class="ci-rename" title="重命名">✎</button>
+        <button class="ci-del" title="删除对话">🗑</button>
+      </span>
+    </li>
+  </template>
+
+  <!-- 单个协议分组模板：标题 + 供应商列表 + 添加按钮 -->
+  <template id="tpl-provider-group">
+    <section class="provider-group">
+      <div class="pg-head">
+        <h4 class="pg-label"></h4>
+        <button class="pg-add">＋ 添加供应商</button>
+      </div>
+      <div class="pg-vendors"></div>
+      <p class="pg-empty">还没有供应商，点右上角添加。</p>
+    </section>
+  </template>
+
+  <!-- 单个供应商配置卡片模板 -->
+  <template id="tpl-vendor">
+    <div class="vendor">
+      <div class="vendor-head">
+        <input class="vd-name" type="text" placeholder="供应商名字，如 OpenRouter">
+        <button class="vd-del" title="删除该供应商">✕</button>
+      </div>
+      <label>
+        <span>Base URL</span>
+        <input class="vd-base-url" type="text" placeholder="https://api.example.com">
+      </label>
+      <label>
+        <span>API Key</span>
+        <div class="input-with-toggle">
+          <input class="vd-api-key" type="password" placeholder="sk-...">
+          <button type="button" class="toggle-visibility" title="显示密钥">
+            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5 12S5.2 5.5 12 5.5 22.5 12 22.5 12 18.8 18.5 12 18.5 1.5 12 1.5 12z"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/>
+            </svg>
+          </button>
+        </div>
+      </label>
+
+      <div class="vd-models">
+        <div class="vd-models-head">
+          <span>模型</span>
+          <button class="vd-model-add">＋ 添加模型</button>
+        </div>
+        <div class="vd-model-list"></div>
+        <p class="vd-model-empty">还没有模型。</p>
+      </div>
+
+      <div class="vd-actions">
+        <button class="vd-probe">测试连通性</button>
+        <span class="vd-result"></span>
+      </div>
+    </div>
+  </template>
+
+  <!-- 单行模型：底层 ID + 显示名 -->
+  <template id="tpl-model-row">
+    <div class="model-row">
+      <input class="mr-id" type="text" placeholder="底层 ID，如 claude-sonnet-4-20250514">
+      <input class="mr-name" type="text" placeholder="显示名，如 Claude Sonnet 4">
+      <button class="mr-del" title="删除该模型">✕</button>
+    </div>
+  </template>
+
+  <!-- 消息气泡模板 -->
+  <template id="tpl-message">
+    <div class="msg">
+      <div class="msg-avatar">
+        <svg class="avatar-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 图标内容由 JS 根据角色动态填充 -->
+        </svg>
+      </div>
+      <div class="msg-content">
+        <div class="msg-identity"></div>
+        <div class="msg-body">
+          <details class="msg-thinking hidden">
+            <summary>思考过程</summary>
+            <div class="msg-thinking-text"></div>
+          </details>
+          <div class="msg-attachments hidden"></div>
+          <div class="msg-text"></div>
+          <div class="msg-note hidden"></div>
+          <div class="msg-meta"></div>
+          <!-- 操作按钮：平时半透明，悬停整条气泡时才显出来 -->
+          <div class="msg-actions hidden"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="/markdown.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

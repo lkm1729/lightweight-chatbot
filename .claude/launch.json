@@ -1,0 +1,47 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "chatbot",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "chatbot-8010",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8010"
+      ],
+      "port": 8010
+    },
+    {
+      "name": "chatbot-8020",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8020"
+      ],
+      "port": 8020
+    }
+  ]
+}

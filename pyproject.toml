@@ -1,0 +1,33 @@
+[project]
+name = "lightweight-chatbot"
+version = "0.1.0"
+description = "轻量级多后端 Chatbot：Anthropic Messages / OpenAI Chat Completions / OpenAI Responses / Gemini"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.28",
+    "pydantic>=2.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "respx>=0.21",
+]
+# 打包桌面版用；固定版本，免得换台机器打出来的行为不一样
+packaging = [
+    "pyinstaller==6.22.2",
+    "pywebview==6.2.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# uv 的 package = false 不会把项目根装进环境，显式加入 sys.path
+pythonpath = ["."]
+
+[tool.uv]
+package = false
