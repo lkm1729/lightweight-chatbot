@@ -136,19 +136,35 @@ git commit -m "feat: 添加新功能"
 #### 创建新版本
 
 ```bash
-# 创建 v0.2.0 版本
+# 创建 v0.2.0 版本（不上传文件）
 .github/gh-helper.sh release v0.2.0
 
+# 创建版本并上传打包好的客户端
+.github/gh-helper.sh release v0.2.0 "Easy-Chatbox-v0.2.0.zip"
+
 # 或者不带 v 前缀（自动添加）
-.github/gh-helper.sh release 0.2.0
+.github/gh-helper.sh release 0.2.0 "path/to/package.zip"
 ```
 
 会自动：
 1. 创建 Git tag
 2. 推送 tag 到远程
 3. 创建 Release 草稿（带模板）
+4. 如果提供了文件路径，自动上传到 Release
 
 然后你可以在 GitHub 上编辑 Release 说明并发布。
+
+#### 补充上传文件到已有 Release
+
+如果创建 Release 时忘记上传文件：
+
+```bash
+# 上传文件到指定版本
+gh release upload v0.2.0 Easy-Chatbox-v0.2.0.zip
+
+# 上传多个文件
+gh release upload v0.2.0 client.zip source.tar.gz
+```
 
 ### Fork 同步
 
@@ -212,21 +228,31 @@ git commit -m "fix: 修复连接超时问题"
 
 ```bash
 # 1. 确保在 main/master 分支
-git checkout main
+git checkout master
 git pull
 
-# 2. 更新版本号（pyproject.toml）
+# 2. 打包客户端
+cd packaging
+python build.py
+cd ..
+
+# 3. 压缩发布文件
+# Windows: 右键 "Easy-Chatbox-聊天助手" 文件夹 → 压缩为 ZIP
+# 或使用命令行
+powershell Compress-Archive -Path "Easy-Chatbox-聊天助手" -DestinationPath "Easy-Chatbox-v0.2.0.zip"
+
+# 4. 更新版本号（pyproject.toml）
 # version = "0.2.0"
 
-# 3. 提交版本更新
+# 5. 提交版本更新
 git add pyproject.toml
 git commit -m "chore: bump version to 0.2.0"
 git push
 
-# 4. 创建 Release
-.github/gh-helper.sh release v0.2.0
+# 6. 创建 Release 并上传客户端
+.github/gh-helper.sh release v0.2.0 "Easy-Chatbox-v0.2.0.zip"
 
-# 5. 在 GitHub 编辑 Release 说明并发布
+# 7. 在 GitHub 编辑 Release 说明并发布
 ```
 
 ## 🔧 直接使用 GitHub CLI

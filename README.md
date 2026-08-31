@@ -71,8 +71,8 @@ Easy Chatbox 是一个功能完整的本地 AI 聊天客户端，支持同时配
 
 ```bash
 # 克隆仓库
-git clone <repository-url>
-cd LightWeight_Chatbot
+git clone https://github.com/lkm1729/lightweight-chatbot.git
+cd lightweight-chatbot
 
 # 使用 uv 安装依赖
 uv sync

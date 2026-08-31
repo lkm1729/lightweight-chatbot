@@ -39,11 +39,12 @@ show_help() {
     setup-secrets   设置 GitHub Secrets（用于 CI/CD）
 
 示例:
-    ./gh-helper.sh init                    # 创建私有仓库并推送
-    ./gh-helper.sh push                     # 推送到远程
-    ./gh-helper.sh pr "添加新功能"          # 创建 PR
-    ./gh-helper.sh issue-create "Bug标题"   # 创建 issue
-    ./gh-helper.sh release v0.2.0           # 创建 release
+    ./gh-helper.sh init                                    # 创建私有仓库并推送
+    ./gh-helper.sh push                                     # 推送到远程
+    ./gh-helper.sh pr "添加新功能"                          # 创建 PR
+    ./gh-helper.sh issue-create "Bug标题"                   # 创建 issue
+    ./gh-helper.sh release v0.2.0                           # 创建 release（不上传文件）
+    ./gh-helper.sh release v0.2.0 Easy-Chatbox.zip          # 创建 release 并上传文件
 
 环境变量:
     GITHUB_USER     GitHub 用户名（默认从 gh 获取）
@@ -233,10 +234,11 @@ create_issue() {
 # 创建 release
 create_release() {
     local version="${1:-}"
+    local exe_path="${2:-}"
 
     if [ -z "$version" ]; then
         error "请提供版本号"
-        info "用法: ./gh-helper.sh release v0.2.0"
+        info "用法: ./gh-helper.sh release v0.2.0 [exe文件路径]"
         exit 1
     fi
 
@@ -251,10 +253,16 @@ create_release() {
     git tag -a "$version" -m "Release $version"
     git push origin "$version"
 
-    # 创建 release
-    gh release create "$version" \
-        --title "Release $version" \
+    # 准备 release 命令参数
+    local release_args=(
+        "$version"
+        --title "Release $version"
         --notes "## 🎉 Release $version
+
+### 📦 下载
+
+- **Windows 用户（推荐）**: 下载 \`Easy-Chatbox-${version}.zip\` 解压后运行 \`Easy-Chatbox 启动.exe\`
+- **源码运行**: 克隆仓库后运行 \`python run_chatbox.py\`
 
 ### ✨ 新特性
 
@@ -271,11 +279,31 @@ create_release() {
 ### 🔧 其他改进
 
 -
-" \
+
+---
+
+**系统要求**: Windows 10/11 (需要 WebView2 运行时)
+**大小**: ~20MB (Windows 可执行文件)
+"
         --draft
+    )
+
+    # 如果提供了 exe 路径，添加到 release
+    if [ -n "$exe_path" ] && [ -f "$exe_path" ]; then
+        info "准备上传文件: $exe_path"
+        release_args+=("$exe_path")
+    fi
+
+    # 创建 release
+    gh release create "${release_args[@]}"
 
     success "Release 草稿创建成功！"
     info "请访问 GitHub 编辑详情并发布"
+
+    if [ -z "$exe_path" ]; then
+        warning "未提供 exe 文件，请手动上传编译好的客户端"
+        info "上传命令: gh release upload $version <文件路径>"
+    fi
 }
 
 # 同步 fork
